@@ -72,15 +72,20 @@ $.fn.extend({
             return false;
         });
 
-        if (!/firefox/.test(navigator.userAgent.toLowerCase()) && this._opt.breaks) {
-            $(this).keydown(function(e) {
-                if (e.keyCode === 13) {
-                    document.execCommand('insertHTML', false, '<br/><br/>');
-                    return false;
-                }
-            });
-        }
-        
+        // if (!/firefox/.test(navigator.userAgent.toLowerCase()) && this._opt.breaks) {
+        //     $(this).keydown(function(e) {
+        //         if (e.keyCode === 13) {
+        //             document.execCommand('insertHTML', false, '<br/><br/>');
+        //             return false;
+        //         }
+        //     });
+        // }
+        //清空时保留 <p><br></p>
+        $(this).keydown(function(e) {
+            if (e.keyCode === 8 && $("#editor")[0].children.length == 1 && $("#editor")[0].children[0].innerHTML.toLowerCase().trim() === "<br>") {
+                return false;
+            }
+        });
     },
     compressHandler: function(img) {
         var canvas = document.createElement("canvas");
@@ -138,7 +143,7 @@ $.fn.extend({
                     var img = '<img src="' + src + '" style="max-width:100%;" />';
                     _this.insertImage(img);
                 } else {
-                    console.log('地址为空啊!大兄弟', src)
+                    console.log('地址为空', src)
                 }
             }, function (error) {
                 _this._opt.uploadError(error.status,error);
@@ -184,15 +189,17 @@ $.fn.extend({
     pasteHandler: function () {
         var _this = this;
         $(this).on("paste", function (e) {
-            console.log(e.clipboardData.items);
-            var content = $(this).html();
-            console.log(content);
+            // 阻止默认行为，使用 execCommand 的粘贴命令
+            e.preventDefault();
+            var clipboardData = e.clipboardData || e.originalEvent && e.originalEvent.clipboardData;
+            //只获取文字，不考虑获取图片
+            var pasteText = clipboardData.getData('text/plain');        
             valiHTML = _this._opt.validHtml;
-            content = content.replace(/_moz_dirty=""/gi, "").replace(/\[/g, "[[-").replace(/\]/g, "-]]").replace(/<\/ ?tr[^>]*>/gi, "[br]").replace(/<\/ ?td[^>]*>/gi, "&nbsp;&nbsp;").replace(/<(ul|dl|ol)[^>]*>/gi, "[br]").replace(/<(li|dd)[^>]*>/gi, "[br]").replace(/<p [^>]*>/gi, "[br]").replace(new RegExp("<(/?(?:" + valiHTML.join("|") + ")[^>]*)>", "gi"), "[$1]").replace(new RegExp('<span([^>]*class="?at"?[^>]*)>', "gi"), "[span$1]").replace(/<[^>]*>/g, "").replace(/\[\[\-/g, "[").replace(/\-\]\]/g, "]").replace(new RegExp("\\[(/?(?:" + valiHTML.join("|") + "|img|span)[^\\]]*)\\]", "gi"), "<$1>");
+            pasteText = pasteText.replace(/_moz_dirty=""/gi, "").replace(/\[/g, "[[-").replace(/\]/g, "-]]").replace(/<\/ ?tr[^>]*>/gi, "[br]").replace(/<\/ ?td[^>]*>/gi, "&nbsp;&nbsp;").replace(/<(ul|dl|ol)[^>]*>/gi, "[br]").replace(/<(li|dd)[^>]*>/gi, "[br]").replace(/<p [^>]*>/gi, "[br]").replace(new RegExp("<(/?(?:" + valiHTML.join("|") + ")[^>]*)>", "gi"), "[$1]").replace(new RegExp('<span([^>]*class="?at"?[^>]*)>', "gi"), "[span$1]").replace(/<[^>]*>/g, "").replace(/\[\[\-/g, "[").replace(/\-\]\]/g, "]").replace(new RegExp("\\[(/?(?:" + valiHTML.join("|") + "|img|span)[^\\]]*)\\]", "gi"), "<$1>");
             if (!/firefox/.test(navigator.userAgent.toLowerCase())) {
-                content = content.replace(/\r?\n/gi, "<br>");
+                pasteText = pasteText.replace(/\r?\n/gi, "<br>");
             }
-            $(this).html(content);
+            document.execCommand('insertHTML', false, pasteText);
         });
     },
     getValue: function () {

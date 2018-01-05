@@ -26,8 +26,6 @@ artEditor cdn 加载方式：
   上传图片其他参数，例如：{type: 1}  
 ### uploadField
   上传图片字段, 默认值：uploadfile
-### placeholader
-  富文本编辑器holder
 ### validHtml
   粘贴时，去除不合法的html标签
 ### uploadSuccess
@@ -55,6 +53,7 @@ artEditor cdn 加载方式：
 html:
 ```
 <div class="article-content" id="content">
+  <p><br/></p>
 </div>
 ```
 js:
@@ -62,12 +61,11 @@ js:
 ```
 $('#content').artEditor({
 	imgTar: '#imageUpload',
-	limitSize: 5,   // 兆
+	limitSize: 5,   // M
 	showServer: false,
 	uploadUrl: '',
 	data: {},
 	uploadField: 'image',
-	placeholader: '<p>请输入文章正文内容</p>',
 	validHtml: ["br"],
   beforeUpload: function(imgBase64) {
     // 处理完之后，必须return图片数据   
