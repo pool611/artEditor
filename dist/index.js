@@ -1,12 +1,11 @@
 /**
  * 移动端富文本编辑器
- * @author ganzw@gmail.com
- * @url    https://github.com/baixuexiyang/artEditor
+ * 原作者  ganzw@gmail.com
+ * URL    https://github.com/baixuexiyang/artEditor
  */
 
 $.fn.extend({
     _opt: {
-        placeholader: '请输入文章正文内容',
         validHtml: [],
         limitSize: 3,
         showServer: false
@@ -195,24 +194,6 @@ $.fn.extend({
             }
             $(this).html(content);
         });
-    },
-    placeholderHandler: function () {
-        var _this = this;
-        var imgReg = /<img\s*([\w]+=(\"|\')([^\"\']*)(\"|\')\s*)*\/?>/;
-        $(this).on('focus', function () {
-            if ($.trim($(this).text()) === _this._opt.placeholader) {
-                $(this).html('');
-            }
-        })
-            .on('blur', function () {
-                if (!$.trim($(this).text()) && !imgReg.test($(this).html())) {
-                    $(this).html('<div class="placeholader" style="pointer-events: none;">' + _this._opt.placeholader + '</div>');
-                }
-            });
-
-        if (!$.trim($(this).text()) && !imgReg.test($(this).html())) {
-            $(this).html('<div class="placeholader" style="pointer-events: none;">' + _this._opt.placeholader + '</div>');
-        }
     },
     getValue: function () {
         return $(this).html();
