@@ -1,12 +1,12 @@
 /**
  * 移动端富文本编辑器
- * @author ganzw@gmail.com
- * @url    https://github.com/baixuexiyang/artEditor
+ * 原作者 ganzw@gmail.com
+ * URL    https://github.com/baixuexiyang/artEditor
+ * 现作者 zx
  */
 
 $.fn.extend({
     _opt: {
-        placeholader: '请输入文章正文内容',
         validHtml: [],
         limitSize: 3,
         showServer: false
@@ -38,10 +38,20 @@ $.fn.extend({
                         img = new Image();
                     img.src = f.target.result;
                     if(_this._opt.compressSize && Math.ceil(file.size / 1024 / 1024) > _this._opt.compressSize) {
-                        // 解决Firefox读取不到图片高、宽
-                        setTimeout(function() {
+                        img.onload = function(){
                             data = _this.compressHandler(img);
-                        }, 10);
+
+                            if (_this._opt.beforeUpload && typeof _this._opt.beforeUpload === "function") {
+                                data = _this._opt.beforeUpload(data);
+                            }
+                            if (_this._opt.showServer) {
+                                _this.upload(data);
+                                return;
+                            }
+                            var image = '<img src="' + data + '" style="max-width:100%;" />';
+                            _this.insertImage(image);
+                        }
+                        return;
                     }
                     if(_this._opt.beforeUpload && typeof _this._opt.beforeUpload === "function") {
                         data = _this._opt.beforeUpload(data);
@@ -73,15 +83,20 @@ $.fn.extend({
             return false;
         });
 
-        if (!/firefox/.test(navigator.userAgent.toLowerCase()) && this._opt.breaks) {
-            $(this).keydown(function(e) {
-                if (e.keyCode === 13) {
-                    document.execCommand('insertHTML', false, '<br/><br/>');
-                    return false;
-                }
-            });
-        }
-        
+        // if (!/firefox/.test(navigator.userAgent.toLowerCase()) && this._opt.breaks) {
+        //     $(this).keydown(function(e) {
+        //         if (e.keyCode === 13) {
+        //             document.execCommand('insertHTML', false, '<br/><br/>');
+        //             return false;
+        //         }
+        //     });
+        // }
+        //清空时保留 <p><br></p>
+        $(this).keydown(function(e) {
+            if (e.keyCode === 8 && $("#editor")[0].children.length == 1 && $("#editor")[0].children[0].innerHTML.toLowerCase().trim() === "<br>") {
+                return false;
+            }
+        });
     },
     compressHandler: function(img) {
         var canvas = document.createElement("canvas");
@@ -139,7 +154,7 @@ $.fn.extend({
                     var img = '<img src="' + src + '" style="max-width:100%;" />';
                     _this.insertImage(img);
                 } else {
-                    console.log('地址为空啊!大兄弟', src)
+                    console.log('地址为空', src)
                 }
             }, function (error) {
                 _this._opt.uploadError(error.status,error);
@@ -185,34 +200,18 @@ $.fn.extend({
     pasteHandler: function () {
         var _this = this;
         $(this).on("paste", function (e) {
-            console.log(e.clipboardData.items);
-            var content = $(this).html();
-            console.log(content);
+            // 阻止默认行为，使用 execCommand 的粘贴命令
+            e.preventDefault();
+            var clipboardData = e.clipboardData || e.originalEvent && e.originalEvent.clipboardData;
+            //只获取文字，不考虑获取图片
+            var pasteText = clipboardData.getData('text/plain');        
             valiHTML = _this._opt.validHtml;
-            content = content.replace(/_moz_dirty=""/gi, "").replace(/\[/g, "[[-").replace(/\]/g, "-]]").replace(/<\/ ?tr[^>]*>/gi, "[br]").replace(/<\/ ?td[^>]*>/gi, "&nbsp;&nbsp;").replace(/<(ul|dl|ol)[^>]*>/gi, "[br]").replace(/<(li|dd)[^>]*>/gi, "[br]").replace(/<p [^>]*>/gi, "[br]").replace(new RegExp("<(/?(?:" + valiHTML.join("|") + ")[^>]*)>", "gi"), "[$1]").replace(new RegExp('<span([^>]*class="?at"?[^>]*)>', "gi"), "[span$1]").replace(/<[^>]*>/g, "").replace(/\[\[\-/g, "[").replace(/\-\]\]/g, "]").replace(new RegExp("\\[(/?(?:" + valiHTML.join("|") + "|img|span)[^\\]]*)\\]", "gi"), "<$1>");
+            pasteText = pasteText.replace(/_moz_dirty=""/gi, "").replace(/\[/g, "[[-").replace(/\]/g, "-]]").replace(/<\/ ?tr[^>]*>/gi, "[br]").replace(/<\/ ?td[^>]*>/gi, "&nbsp;&nbsp;").replace(/<(ul|dl|ol)[^>]*>/gi, "[br]").replace(/<(li|dd)[^>]*>/gi, "[br]").replace(/<p [^>]*>/gi, "[br]").replace(new RegExp("<(/?(?:" + valiHTML.join("|") + ")[^>]*)>", "gi"), "[$1]").replace(new RegExp('<span([^>]*class="?at"?[^>]*)>', "gi"), "[span$1]").replace(/<[^>]*>/g, "").replace(/\[\[\-/g, "[").replace(/\-\]\]/g, "]").replace(new RegExp("\\[(/?(?:" + valiHTML.join("|") + "|img|span)[^\\]]*)\\]", "gi"), "<$1>");
             if (!/firefox/.test(navigator.userAgent.toLowerCase())) {
-                content = content.replace(/\r?\n/gi, "<br>");
+                pasteText = pasteText.replace(/\r?\n/gi, "<br>");
             }
-            $(this).html(content);
+            document.execCommand('insertHTML', false, pasteText);
         });
-    },
-    placeholderHandler: function () {
-        var _this = this;
-        var imgReg = /<img\s*([\w]+=(\"|\')([^\"\']*)(\"|\')\s*)*\/?>/;
-        $(this).on('focus', function () {
-            if ($.trim($(this).text()) === _this._opt.placeholader) {
-                $(this).html('');
-            }
-        })
-            .on('blur', function () {
-                if (!$.trim($(this).text()) && !imgReg.test($(this).html())) {
-                    $(this).html('<div class="placeholader" style="pointer-events: none;">' + _this._opt.placeholader + '</div>');
-                }
-            });
-
-        if (!$.trim($(this).text()) && !imgReg.test($(this).html())) {
-            $(this).html('<div class="placeholader" style="pointer-events: none;">' + _this._opt.placeholader + '</div>');
-        }
     },
     getValue: function () {
         return $(this).html();

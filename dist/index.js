@@ -37,10 +37,20 @@ $.fn.extend({
                         img = new Image();
                     img.src = f.target.result;
                     if(_this._opt.compressSize && Math.ceil(file.size / 1024 / 1024) > _this._opt.compressSize) {
-                        // 解决Firefox读取不到图片高、宽
-                        setTimeout(function() {
+                        img.onload = function(){
                             data = _this.compressHandler(img);
-                        }, 10);
+
+                            if (_this._opt.beforeUpload && typeof _this._opt.beforeUpload === "function") {
+                                data = _this._opt.beforeUpload(data);
+                            }
+                            if (_this._opt.showServer) {
+                                _this.upload(data);
+                                return;
+                            }
+                            var image = '<img src="' + data + '" style="max-width:100%;" />';
+                            _this.insertImage(image);
+                        }
+                        return;
                     }
                     if(_this._opt.beforeUpload && typeof _this._opt.beforeUpload === "function") {
                         data = _this._opt.beforeUpload(data);
